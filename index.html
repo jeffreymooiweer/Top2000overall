@@ -40,7 +40,7 @@
 
     <script>
         async function fetchTop2000Data() {
-            const url = "https://nl.m.wikipedia.org/wiki/Lijst_van_Radio_2-Top_2000%27s";
+            const url = "https://cors-anywhere.herokuapp.com/https://nl.m.wikipedia.org/wiki/Lijst_van_Radio_2-Top_2000%27s";
             const response = await fetch(url);
             const text = await response.text();
             const parser = new DOMParser();
@@ -60,14 +60,11 @@
         }
 
         function calculateScores(headers, data) {
-            // Columns voor jaren (alles na de eerste twee kolommen)
             const yearColumns = headers.slice(2);
-
-            // Bereken scores
             const scores = {};
             data.forEach(row => {
-                const title = row[1]; // Titel
-                const artist = row[0]; // Artiest
+                const title = row[1];
+                const artist = row[0];
                 if (!scores[title]) scores[title] = { title, artist, totalScore: 0 };
 
                 yearColumns.forEach((year, index) => {
@@ -79,7 +76,6 @@
                 });
             });
 
-            // Sorteer op totaal score
             return Object.values(scores)
                 .sort((a, b) => b.totalScore - a.totalScore)
                 .slice(0, 20);
