@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Top 2000 Scorer</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ccc;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f4f4f4;
+        }
+    </style>
+</head>
+<body>
+    <h1>Top 20 Radio 2 Top 2000</h1>
+    <p>De gegevens worden opgehaald en verwerkt...</p>
+    <table id="top20-table" style="display: none;">
+        <thead>
+            <tr>
+                <th>Rank</th>
+                <th>Song</th>
+                <th>Artist</th>
+                <th>Total Score</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+
+    <script>
+        async function fetchTop2000Data() {
+            const url = "https://nl.m.wikipedia.org/wiki/Lijst_van_Radio_2-Top_2000%27s";
+            const response = await fetch(url);
+            const text = await response.text();
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(text, "text/html");
+
+            // Vind de tabel
+            const table = doc.querySelector(".wikitable");
+            const rows = Array.from(table.querySelectorAll("tr"));
+            const headers = Array.from(rows[0].querySelectorAll("th")).map(th => th.textContent.trim());
+            
+            const data = rows.slice(1).map(row => {
+                const cells = Array.from(row.querySelectorAll("td, th"));
+                return headers.map((_, i) => (cells[i] ? cells[i].textContent.trim() : ""));
+            });
+
+            return { headers, data };
+        }
+
+        function calculateScores(headers, data) {
+            // Columns voor jaren (alles na de eerste twee kolommen)
+            const yearColumns = headers.slice(2);
+
+            // Bereken scores
+            const scores = {};
+            data.forEach(row => {
+                const title = row[1]; // Titel
+                const artist = row[0]; // Artiest
+                if (!scores[title]) scores[title] = { title, artist, totalScore: 0 };
+
+                yearColumns.forEach((year, index) => {
+                    const position = parseInt(row[index + 2], 10);
+                    if (!isNaN(position)) {
+                        const score = 2001 - position;
+                        scores[title].totalScore += score > 0 ? score : 0;
+                    }
+                });
+            });
+
+            // Sorteer op totaal score
+            return Object.values(scores)
+                .sort((a, b) => b.totalScore - a.totalScore)
+                .slice(0, 20);
+        }
+
+        function displayTop20(top20) {
+            const table = document.getElementById("top20-table");
+            const tbody = table.querySelector("tbody");
+            tbody.innerHTML = "";
+
+            top20.forEach((item, index) => {
+                const row = document.createElement("tr");
+                row.innerHTML = `
+                    <td>${index + 1}</td>
+                    <td>${item.title}</td>
+                    <td>${item.artist}</td>
+                    <td>${item.totalScore}</td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            document.querySelector("p").style.display = "none";
+            table.style.display = "table";
+        }
+
+        async function init() {
+            try {
+                const { headers, data } = await fetchTop2000Data();
+                const top20 = calculateScores(headers, data);
+                displayTop20(top20);
+            } catch (error) {
+                document.querySelector("p").textContent = "Er is een fout opgetreden bij het ophalen of verwerken van de gegevens.";
+                console.error(error);
+            }
+        }
+
+        init();
+    </script>
+</body>
+</html>
